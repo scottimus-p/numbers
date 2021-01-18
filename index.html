@@ -1,0 +1,51 @@
+<html>
+<head>
+
+	<link rel="stylesheet" href="styles.css">
+
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+	<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300&display=swap" rel="stylesheet">
+
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+	<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300&display=swap" rel="stylesheet">
+
+</head>
+<body>
+	<div class="grid-container">
+		<div class="grid-item header" id="header">
+			<h1>binary conv</h1>
+			<div class="options" id="integer-options">
+				<ul>
+					<li>
+						<label for="signed">signed integer</label> <input class="checkbox" type="checkbox" id="signed" name="signed" value="signed" checked />
+					</li>
+					<li>
+						<select name="num-bytes" id="num-bytes">
+							<option value="2">2</option>
+							<option value="4">4</option>
+							<option value="8">8</option>
+						</select>&nbsp;&nbsp;<label for="num-bytes"> bytes</label>
+					</li>
+				</ul>
+			</div>
+			<div class="instructions">
+				<p>note: when toggling between signed and unsigned values, the binary/hexadecimal values remain constant and the decimal is updated</p>
+			</div>
+		</div>
+		<div class="grid-item content panel" id="integers">
+			<div class="container" id="decimal">
+				<h4 class="bottom">decimal</h4><input type="text" class="input-field" id="decimal-value" size=28 value=0 />
+			</div>
+			<div class="container" id="hexadecimal">
+				<h4 class="bottom">hexadecimal</h4><input type="text" class="input-field" id="hexadecimal-value" size=24/>
+			</div>
+			<div class="container" id="binary">
+				<h4 class="bottom">binary</h4><input type="text" class="input-field" id="binary-value" size=76/>
+			</div>
+		</div>
+	</div>
+<script src="formatting.js"></script>
+<script src="inputValidation.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
