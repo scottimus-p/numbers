@@ -2,8 +2,6 @@
 function validateHexadecimalInput() {
 	let pos = hexadecimalInput.selectionStart - 1
 
-	validateCharacter(hexadecimalInput, pos, values.hexadecimal.formatted, isValidHexadecimalCharacter)
-
 	if (!isValidHexadecimalForByteLength(hexadecimalInput.value, numBytes)) {
 		hexadecimalInput.value = hexadecimalInput.value.substring(0, hexadecimalInput.value.length - 1)
 	}
@@ -12,8 +10,6 @@ function validateHexadecimalInput() {
 function validateBinaryInput() {
 	let pos = binaryInput.selectionStart - 1
 
-	validateCharacter(binaryInput, pos, values.binary.formatted, isValidBinaryCharacter)
-
 	if (!isValidBinaryForByteLength(binaryInput.value, numBytes)) {
 		binaryInput.value = binaryInput.value.substring(0, binaryInput.value.length - 1)
 		// maybe do a message next to the input box
@@ -21,8 +17,6 @@ function validateBinaryInput() {
 }
 
 function validateDecimalInput() {
-
-	validateDecimalCharacter(decimalInput, isValidDecimalCharacter, signedInteger)
 
 	if (!isValidDecimalForByteLength(decimalInput.value, numBytes, signedInteger)) {
 		inputErrorState.error = true

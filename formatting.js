@@ -1,20 +1,26 @@
 
 
-function formatFieldsForError() {
-
-	if (!inputErrorState.error) {
-		return
-	}
+function formatFieldsForError(errorField) {
 
 	let fields = document.getElementsByClassName("input-field")
 
 	for (let i = 0; i < fields.length; i++) {
-		if (inputErrorState.errorFields.includes(fields[i])) {
+		if (fields[i] === errorField) {
 			fields[i].style.backgroundColor = "var(--alert)"
 		}
 		else {
 			fields[i].style.color = "var(--grayText)"
 		}
+	}
+}
+
+function removeErrorFormatting() {
+
+	let fields = document.getElementsByClassName("input-field")
+
+	for (let i = 0; i < fields.length; i++) {
+		fields[i].style.removeProperty('background-color')
+		fields[i].style.removeProperty('color')
 	}
 }
 
@@ -24,13 +30,20 @@ function unformatAllFields() {
 	binaryInput.value = binaryInput.value.replace(/ /g, "")
 }
 
+function unformatDecimalValue(formattedValue) {
+	return formattedValue.replace(/,/g, '')
+}
+
 function formatRawDecimalValue(rawValue) {
 	if (rawValue.charAt(0) === '-') {
+		if (rawValue.charAt(1) === '0') {
+			rawValue = rawValue.replace('0', '')
+		}
 		return '-' + formatRawValue(rawValue.substring(1), 10)
 	}
 	else {
-		if (rawValue.length > 1) {
-			rawValue = rawValue.replace(/0/, "")
+		if (rawValue.length > 1 && rawValue.charAt(0) === '0') {
+			rawValue = rawValue.replace('0', '')
 		}
 		return formatRawValue(rawValue, 10)
 	}

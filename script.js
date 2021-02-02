@@ -1,15 +1,24 @@
 
 function decimal() {
 	
-	validateDecimalInput()
+	decimalInput.value = decimalInput.value.replace(/[^0-9,-]+/g, '')
 
-	values.decimal.unformatted = decimalInput.value
+	if (decimalInput.value.length > values.decimal.formatted.length) {
+		validateDecimalInput()
+	}
 
-	if (inputErrorState.error) {
+	values.decimal.unformatted = unformatDecimalValue(decimalInput.value)
+
+	if (!isValidDecimalForByteLength(decimalInput.value, numBytes, signedInteger)) {
+		// maybe do a message next to the input box
+
 		updateScreenValues()
-		formatFieldsForError()
+		formatFieldsForError(decimalInput)
 
 		return
+	}
+	else {
+		removeErrorFormatting()
 	}
 
 	let value = values.decimal.unformatted
@@ -29,6 +38,20 @@ function decimal() {
 
 
 function hexadecimal() {
+	let pos = hexadecimalInput.selectionStart - 1
+	const spaces = countSpaces(hexadecimalInput.value.substr(0, pos + 1))
+	let beforeSpace = hexadecimalInput.value.charAt(pos + 1) === ' '
+
+	hexadecimalInput.value = hexadecimalInput.value.replace(/[^0-9a-fA-F]+/g, '').replace(/ /, '')
+
+	beforeSpace &= hexadecimalInput.value.length >= values.hexadecimal.unformatted.length
+
+	if (hexadecimalInput.value.length < values.hexadecimal.unformatted.length) {
+		hexadecimalInput.value = values.hexadecimal.unformatted.substr(0, pos + 1 - spaces) + '0' + values.hexadecimal.unformatted.substr(pos + 2 - spaces)
+	}
+	else {
+		hexadecimalInput.value = values.hexadecimal.unformatted.substr(0, pos - spaces) + hexadecimalInput.value.charAt(pos - spaces) + values.hexadecimal.unformatted.substr(pos + 1 - spaces)
+	}
 
 	validateHexadecimalInput()
 
@@ -48,11 +71,28 @@ function hexadecimal() {
 	values.decimal.unformatted = signedInteger ? (binaryValue.length === numBytes * 8 && binaryValue.charAt(0) === '1' ? '-' + convert(twosComplement(binaryValue), 2, 10) : convert(binaryValue, 2, 10)) : convert(value, 16, 10)
 
 	updateScreenValues()
+
+	prevValues = values
+	hexadecimalInput.setSelectionRange(pos + 1 + (beforeSpace ? 1 : 0), pos + 1 + (beforeSpace ? 1 : 0))
 }
 
 function binary() {
+	let pos = binaryInput.selectionStart - 1
+	const spaces = countSpaces(binaryInput.value.substr(0, pos + 1))
+	let beforeSpace = binaryInput.value.charAt(pos + 1) === ' '
 
-		validateBinaryInput()
+	binaryInput.value = binaryInput.value.replace(/[^01]+/g, '').replace(/ /g, '')
+
+	beforeSpace &= binaryInput.value.length >= values.binary.unformatted.length
+
+	if (binaryInput.value.length < values.binary.unformatted.length) {
+		binaryInput.value = values.binary.unformatted.substr(0, pos + 1 - spaces) + '0' + values.binary.unformatted.substr(pos + 2 - spaces)
+	}
+	else {
+		binaryInput.value = values.binary.unformatted.substr(0, pos - spaces) + binaryInput.value.charAt(pos - spaces) + values.binary.unformatted.substr(pos + 1 - spaces)
+	}
+
+	validateBinaryInput()
 
 	values.binary.unformatted = binaryInput.value
 
@@ -71,6 +111,8 @@ function binary() {
 	updateScreenValues()
 
 	prevValues = values
+
+	binaryInput.setSelectionRange(pos + 1 + (beforeSpace ? 1 : 0), pos + 1 + (beforeSpace ? 1 : 0))
 }
 
 function convert(value, fromBase, toBase) {
@@ -119,19 +161,42 @@ function padHexString(hexString, numBytes) {
 }
 
 function updateScreenValues() {
+	updateUnformattedValues()
 	updateFormattedValues()
 
-	decimalInput.value = values.decimal.unformatted
-	hexadecimalInput.value = values.hexadecimal.unformatted
-	binaryInput.value = values.binary.unformatted
+	decimalInput.value = values.decimal.formatted
+	hexadecimalInput.value = values.hexadecimal.formatted
+	binaryInput.value = values.binary.formatted
+}
+
+function updateUnformattedValues() {
+	values.binary.unformatted = padBitString(values.binary.unformatted, numBytes)
+	values.hexadecimal.unformatted = padHexString(values.hexadecimal.unformatted, numBytes)
 }
 
 function updateFormattedValues() {
-	values.decimal.formatted = values.decimal.unformatted
-	values.hexadecimal.formatted = values.hexadecimal.unformatted
-	values.binary.formatted = values.binary.unformatted
+	values.decimal.formatted = formatRawDecimalValue(values.decimal.unformatted)
+	values.hexadecimal.formatted = formatRawValue(values.hexadecimal.unformatted, 16)
+	values.binary.formatted = formatRawValue(values.binary.unformatted, 2)
 }
 
+function convertUnsignedDecimalToBinary(valueStr) {
+	return convert(valueStr, 10, 2)
+}
+
+function convertSignedDecimalToBinary(valueStr) {
+	let isNegativeVal = isNegative(valueStr)
+	let absoluteValue = valueStr.replace(/-/, "")
+
+	let binary = convertUnsignedDecimalToBinary(absoluteValue)
+
+	return isNegativeVal ? twosComplement(binary) : binary
+}
+
+const countSpaces = (str) => {
+  const re = / /g
+  return ((str || '').match(re) || []).length
+}
 
 
 var decimalInput = document.getElementById("decimal-value")
@@ -146,8 +211,31 @@ hexadecimalInput.oninput = hexadecimal
 binaryInput.oninput = binary
 
 
-numBytesSelect.onchange = () => { numBytes = numBytesSelect.value; binary() }
-signedSelect.onchange = () => { signedInteger = signedSelect.checked; binary() }
+numBytesSelect.onchange = () => { 
+	numBytes = numBytesSelect.value;
+
+	values.binary.unformatted = '0'.repeat(numBytes * 8 - values.binary.unformatted.length) + values.binary.unformatted
+	binaryInput.value = values.binary.unformatted
+
+	if (!isValidDecimalForByteLength(decimalInput.value, numBytes, signedInteger)) {
+		// maybe do a message next to the input box
+
+		updateScreenValues()
+		formatFieldsForError(decimalInput)
+
+		return
+	}
+	else {
+		removeErrorFormatting()
+	}
+
+	decimal() 
+}
+
+signedSelect.onchange = () => {
+	signedInteger = signedSelect.checked;
+	binary()
+}
 
 
 var signedInteger = document.getElementById("signed").checked
@@ -158,8 +246,8 @@ var decimalLength = 0
 
 var values = {
 	decimal: {unformatted: '0', formatted: ''},
-	hexadecimal: {unformatted: '', formatted: ''},
-	binary: {unformatted: '', formatted: ''}
+	hexadecimal: {unformatted: '0000', formatted: ''},
+	binary: {unformatted: '0000000000000000', formatted: ''}
 }
 
 updateScreenValues()
