@@ -212,10 +212,18 @@ binaryInput.oninput = binary
 
 
 numBytesSelect.onchange = () => { 
+	const prevNumBytes = numBytes
+
 	numBytes = numBytesSelect.value;
 
-	values.binary.unformatted = '0'.repeat(numBytes * 8 - values.binary.unformatted.length) + values.binary.unformatted
-	binaryInput.value = values.binary.unformatted
+	if (numBytes > prevNumBytes) {
+		values.binary.unformatted = '0'.repeat(numBytes * 8 - values.binary.unformatted.length) + values.binary.unformatted
+		binaryInput.value = values.binary.unformatted
+	}
+	else {
+		values.binary.unformatted = values.binary.unformatted.substr(values.binary.unformatted - 1 - numBytes * 8)
+		binaryInput.value = values.binary.unformatted
+	}
 
 	if (!isValidDecimalForByteLength(decimalInput.value, numBytes, signedInteger)) {
 		// maybe do a message next to the input box
