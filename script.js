@@ -36,26 +36,38 @@ function decimal() {
 	updateScreenValues()
 }
 
+function elementFormatting(element, value) {
+	let pos = element.selectionStart - 1
+	
+	const spaces = countSpaces(element.value.substr(0, pos + 1))
+	
+	let isBeforeSpace = element.value.charAt(pos + 1) === ' '
 
-function hexadecimal() {
-	let pos = hexadecimalInput.selectionStart - 1
-	const spaces = countSpaces(hexadecimalInput.value.substr(0, pos + 1))
-	let beforeSpace = hexadecimalInput.value.charAt(pos + 1) === ' '
+	element.value = element.value.replace(/[^0-9a-fA-F]+/g, '').replace(/ /, '')
 
-	hexadecimalInput.value = hexadecimalInput.value.replace(/[^0-9a-fA-F]+/g, '').replace(/ /, '')
+	isBeforeSpace &= element.value.length >= value.unformatted.length
 
-	beforeSpace &= hexadecimalInput.value.length >= values.hexadecimal.unformatted.length
-
-	if (hexadecimalInput.value.length < values.hexadecimal.unformatted.length) {
-		hexadecimalInput.value = values.hexadecimal.unformatted.substr(0, pos + 1 - spaces) + '0' + values.hexadecimal.unformatted.substr(pos + 2 - spaces)
+	if (element.value.length < value.unformatted.length) {
+		element.value = value.unformatted.substr(0, pos + 1 - spaces) + '0' + value.unformatted.substr(pos + 2 - spaces)
 	}
 	else {
-		hexadecimalInput.value = values.hexadecimal.unformatted.substr(0, pos - spaces) + hexadecimalInput.value.charAt(pos - spaces) + values.hexadecimal.unformatted.substr(pos + 1 - spaces)
+		element.value = value.unformatted.substr(0, pos - spaces) + element.value.charAt(pos - spaces) + value.unformatted.substr(pos + 1 - spaces)
 	}
 
-	validateHexadecimalInput()
 
-	values.hexadecimal.unformatted = hexadecimalInput.value
+	function postUpdateFormatting () {
+		element.setSelectionRange(pos + 1 + (isBeforeSpace ? 1 : 0), pos + 1 + (isBeforeSpace ? 1 : 0))
+	}
+
+	return postUpdateFormatting
+}
+
+
+function performConversion(element, value) {
+
+	let postUpdateFormatting = elementFormatting(element, value)
+
+	value.unformatted = element.value
 
 	if (inputErrorState.error) {
 		updateScreenValues()
@@ -64,56 +76,65 @@ function hexadecimal() {
 		return
 	}
 
-	let value = values.hexadecimal.unformatted
-	let binaryValue = convert(value, 16, 2)
-
-	values.binary.unformatted = binaryValue
-	values.decimal.unformatted = signedInteger ? (binaryValue.length === numBytes * 8 && binaryValue.charAt(0) === '1' ? '-' + convert(twosComplement(binaryValue), 2, 10) : convert(binaryValue, 2, 10)) : convert(value, 16, 10)
+	convertAll(element)
 
 	updateScreenValues()
+	
+	postUpdateFormatting()
+}
 
-	prevValues = values
-	hexadecimalInput.setSelectionRange(pos + 1 + (beforeSpace ? 1 : 0), pos + 1 + (beforeSpace ? 1 : 0))
+
+
+
+function hexadecimal() {
+	performConversion(hexadecimalInput, values.hexadecimal)
 }
 
 function binary() {
-	let pos = binaryInput.selectionStart - 1
-	const spaces = countSpaces(binaryInput.value.substr(0, pos + 1))
-	let beforeSpace = binaryInput.value.charAt(pos + 1) === ' '
-
-	binaryInput.value = binaryInput.value.replace(/[^01]+/g, '').replace(/ /g, '')
-
-	beforeSpace &= binaryInput.value.length >= values.binary.unformatted.length
-
-	if (binaryInput.value.length < values.binary.unformatted.length) {
-		binaryInput.value = values.binary.unformatted.substr(0, pos + 1 - spaces) + '0' + values.binary.unformatted.substr(pos + 2 - spaces)
-	}
-	else {
-		binaryInput.value = values.binary.unformatted.substr(0, pos - spaces) + binaryInput.value.charAt(pos - spaces) + values.binary.unformatted.substr(pos + 1 - spaces)
-	}
-
-	validateBinaryInput()
-
-	values.binary.unformatted = binaryInput.value
-
-	if (inputErrorState.error) {
-		updateScreenValues()
-		formatFieldsForError()
-
-		return
-	}
-
-	let value = values.binary.unformatted
-
-	values.decimal.unformatted = signedInteger ? (value.length === numBytes * 8 && value.charAt(0) === '1' ? '-'  + convert(twosComplement(value), 2, 10) : convert(value, 2, 10)) : convert(value, 2, 10)
-	values.hexadecimal.unformatted = convert(value, 2, 16)
-
-	updateScreenValues()
-
-	prevValues = values
-
-	binaryInput.setSelectionRange(pos + 1 + (beforeSpace ? 1 : 0), pos + 1 + (beforeSpace ? 1 : 0))
+	performConversion(binaryInput, values.binary)
 }
+
+
+function convertAll(element) {
+	const allElements = document.getElementsByClassName("input-field")
+
+	const fromBase = inputMap.get(element)
+	for (let i = 0; i < allElements.length; i++) {
+		if (element != allElements[i]) {
+			allElements[i].value = easyConversion(element.value, fromBase, inputMap.get(allElements[i]))
+		}
+	}
+
+	setUnformattedValues()
+}
+
+function easyConversion(value, fromBase, toBase) {
+	switch (fromBase) {
+		case 2:
+			var bInt = BigInt('0b' + value)
+			break
+
+		case 10:
+			var bInt = BigInt(value + 'n')
+			break
+
+		case 16:
+			var bInt = BigInt('0x' + value)
+			break;
+	}
+	
+	if (toBase == 10) {
+		if (signedInteger) {
+			bInt = BigInt.asIntN(numBytes * 8, bInt)
+		}
+		else {
+			bInt = BigInt.asUintN(numBytes * 8, bInt)
+		}
+	}
+
+	return bInt.toString(toBase)
+}
+
 
 function convert(value, fromBase, toBase) {
 	let rawValue = isNaN(parseInt(value, fromBase)) ? "" : parseInt(value, fromBase).toString(toBase)
@@ -169,6 +190,12 @@ function updateScreenValues() {
 	binaryInput.value = values.binary.formatted
 }
 
+function setUnformattedValues() {
+	values.binary.unformatted = binaryInput.value
+	values.decimal.unformatted = decimalInput.value
+	values.hexadecimal.unformatted = hexadecimalInput.value
+}
+
 function updateUnformattedValues() {
 	values.binary.unformatted = padBitString(values.binary.unformatted, numBytes)
 	values.hexadecimal.unformatted = padHexString(values.hexadecimal.unformatted, numBytes)
@@ -205,6 +232,10 @@ var binaryInput = document.getElementById("binary-value")
 var numBytesSelect = document.getElementById("num-bytes")
 var signedSelect = document.getElementById("signed")
 
+var inputMap = new Map()
+inputMap.set(decimalInput, 10)
+inputMap.set(binaryInput, 2)
+inputMap.set(hexadecimalInput, 16)
 
 decimalInput.oninput = decimal
 hexadecimalInput.oninput = hexadecimal
@@ -259,6 +290,4 @@ var values = {
 }
 
 updateScreenValues()
-
-var prevValues = values
 
