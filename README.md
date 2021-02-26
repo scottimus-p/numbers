@@ -15,5 +15,6 @@ None. The app is written entirely in HTML, CSS and JavaScript. Any modern browse
 
 Some possible future enhancements I could make:
 
+* Fix some stuff that's broken - typing in values for binary or hexadecimal isn't working properly right now
 * Text formatting - format the binary and hexadecimal sections so that bytes are separated by spaces to improve readability (e.g. `12ef` in hex would be displayed as `12 ef`)
 * Floating point numbers - do similar conversions for floating point numbers using the IEEE 754 standard
